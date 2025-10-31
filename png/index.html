@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Meu carrinho</title>
+
+<!-- 🔹 Favicons -->
+<link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="shortcut icon" href="favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="manifest" href="site.webmanifest" />
+
+<meta name="theme-color" content="#0033c6">
+
+
+  <style>
+    /* ===== Base ===== */
+    .resumo-body{
+      background:#fcfcfc;
+      margin:0; padding:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .row{ width:100%; display:flex; margin:0; padding:0; border:0; background:transparent; position:relative; }
+    .row img{ display:flex; width:100%; height:auto; margin:0; padding:0; border:0; vertical-align:middle; -webkit-user-drag:none; user-select:none; }
+
+    /* Acessibilidade */
+    .sr-only{
+      position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
+      overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+    }
+
+  
+    /* Overlays */
+    .qty-wrap, .total-wrap{ position:relative; }
+
+    /* Caixa de quantidade (apenas números) */
+    .qty-box{
+      position:absolute; z-index:6;
+      left:6%;
+      top:58%; /* ajuste fino conforme sua arte */
+      transform:translateY(-50%);
+      background:#fff;
+      border:1.5px solid #dfe3ea; border-radius:10px;
+      padding:4px 8px;
+      box-shadow:0 3px 10px rgba(0,0,0,.06);
+      pointer-events:auto;
+    }
+    .qty-box select{
+      appearance:none; -webkit-appearance:none;
+      background:transparent; border:0;
+      font-size:clamp(14px,3.6vw,15px);
+      padding:2px 22px 2px 6px; outline:none; cursor:pointer;
+    }
+
+    /* TOTAL azul na imagem quantidade.png (menor, um pouco mais baixo e mais à direita) */
+    .unit-price{
+      position:absolute; z-index:5;
+      right:6%;        /* puxa um pouco mais pra direita */
+      top:49%;         /* mais baixo pra alinhar com “por” */
+      transform:translateY(-50%);
+      color:#0033c6;
+      font-weight:700;
+      font-size:clamp(16px,4.4vw,19px); /* levemente menor */
+      letter-spacing:.2px;
+      pointer-events:none;
+    }
+
+    /* TOTAL na imagem total.png (mais pra cima, sem fundo) */
+    .total-value{
+      position:absolute; z-index:5;
+      right:8%;
+      top:2.5%;        /* mais pra cima */
+      color:#0033c6;
+      font-weight:800;
+      font-size:clamp(18px,6vw,26px);
+      background:transparent;
+      padding:0; border-radius:0; box-shadow:none;
+      pointer-events:none;
+    }
+
+    /* CTA (imagem COMPRA1.png) com efeito expand suave */
+    .link-wrap{ position:relative; width:100%; max-width:100%; overflow:visible; }
+    .insta-link{ display:block; width:100%; height:auto; position:relative; text-decoration:none; -webkit-tap-highlight-color:transparent; }
+    .insta-link img{ display:block; width:100%; height:auto; transition:transform .28s ease, box-shadow .28s ease; transform-origin:center center; }
+    .insta-link:active img, .insta-link:hover img{ transform:scale(1.06); box-shadow:0 10px 25px rgba(0,0,0,.20); }
+
+    /* WhatsApp flutuante (ícone centralizado) */
+    #whats-float{
+      position:fixed; right:18px; bottom:18px; width:60px; height:60px; z-index:99999;
+      display:flex; align-items:center; justify-content:center;
+      border-radius:50%; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,.25);
+      transition:transform .18s ease; background:#25d36500;
+    }
+    #whats-float img{ width:70%; height:70%; object-fit:contain; display:block; }
+    #whats-float:hover{ transform:translateY(-6px); }
+
+    @media (max-width:480px){
+      #whats-float{ width:54px; height:54px; right:12px; bottom:12px; }
+      .qty-box{ top:60%; }
+      .unit-price{ top:50%; right:6%; }
+      .total-value{ top:2%; }
+    }
+  </style>
+
+  <script>
+    /* ===========================
+       Pixels (carrega só se já aceitou na 1ª tela)
+       =========================== */
+    const META_PIXEL_ID = '';  // ← coloque quando quiser ativar
+    const GA_MEASUREMENT_ID = '';
+
+    function getConsent(){ try{ return localStorage.getItem('cookieConsent'); } catch(e){ return null; } }
+
+    function loadMetaPixel(id){
+      if (!id || window.fbq) return;
+      !function(f,b,e,v,n,t,s){
+        if(f.fbq) return; n=f.fbq=function(){ n.callMethod ? n.callMethod.apply(n,arguments) : n.queue.push(arguments) };
+        if(!f._fbq) f._fbq=n; n.push=n; n.loaded=!0; n.version='2.0'; n.queue=[];
+        t=b.createElement(e); t.async=!0; t.src=v; s=b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t,s);
+      }(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', id);
+      fbq('track', 'PageView');
+    }
+
+    function loadGA(id){
+      if (!id || window.gtag) return;
+      var s=document.createElement('script'); s.async=true;
+      s.src='https://www.googletagmanager.com/gtag/js?id='+id; document.head.appendChild(s);
+      window.dataLayer=window.dataLayer||[]; function gtag(){dataLayer.push(arguments)}; window.gtag=gtag;
+      gtag('js', new Date()); gtag('config', id, {send_page_view:false});
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if (getConsent()==='marketing'){ loadMetaPixel(META_PIXEL_ID); loadGA(GA_MEASUREMENT_ID); }
+    });
+  </script>
+</head>
+<body class="resumo-body">
+
+  <!-- topo -->
+  <div class="row"><img src="inicio.png" alt="Início" loading="lazy"/></div>
+
+  <!-- quantidade -->
+  <div class="row qty-wrap">
+    <img src="quantidade.png" alt="Quantidade" loading="lazy"/>
+
+    <div class="qty-box">
+      <label for="qty" class="sr-only">Quantidade</label>
+      <select id="qty" aria-label="Quantidade">
+        <option value="1" selected>1</option>
+        <option value="2">2</option><option value="3">3</option>
+        <option value="4">4</option><option value="5">5</option>
+      </select>
+    </div>
+
+    <!-- total azul sobre quantidade.png -->
+    <div class="unit-price"><span id="unitPrice">399,99</span></div>
+  </div>
+
+  <!-- entrega -->
+  <div class="row"><img src="entrega1.png" alt="Entrega" loading="lazy"/></div>
+
+  <!-- total -->
+  <div class="row total-wrap">
+    <img src="total.png" alt="Total" loading="lazy"/>
+    <div class="total-value" id="totalValue">R$ 399,99</div>
+  </div>
+
+  <!-- CTA comprar (abre checkout na MESMA aba) -->
+  <div class="row link-wrap">
+    <a id="checkoutLink" class="insta-link" href="#" aria-label="Ir para o checkout">
+      <img src="COMPRA1.png" alt="Ir para o checkout" loading="lazy"/>
+    </a>
+  </div>
+
+  <div class="row"><img src="COMPRA2.png" alt="Compra 2" loading="lazy"/></div>
+  <div class="row"><img src="final.png" alt="Final" loading="lazy"/></div>
+
+  <!-- WhatsApp flutuante -->
+  <a id="whats-float"
+     href="https://wa.me/5511930441395?text=Ol%C3%A1%2C%20tenho%20interesse"
+     target="_blank" rel="noopener noreferrer" aria-label="Abrir WhatsApp">
+    <img src="WHATS.png.png" alt="WhatsApp"/>
+  </a>
+
+  <script>
+  (function(){
+    /* ===== Config ===== */
+    const UNIT_CENTS = 39999; // 399,99
+    const CHECKOUT_BASE_URL = 'https://checkout.lojasoficiais.org';
+
+    /* ===== Helpers ===== */
+    const $ = (s)=>document.querySelector(s);
+    const fmtBR = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+    const formatCents = (c)=>fmtBR.format(c/100);
+
+    function clampQty(n){
+      const q = parseInt(n,10);
+      if (isNaN(q) || q<1) return 1;
+      if (q>5) return 5;
+      return q;
+    }
+    function currentQty(){
+      const el = $('#qty');
+      return el ? clampQty(el.value) : 1;
+    }
+    function currentTotalCents(){
+      return currentQty() * UNIT_CENTS;
+    }
+
+    function getQueryParams(){
+      const p = new URLSearchParams(window.location.search);
+      const out = {};
+      ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','fbclid','gclid'].forEach(k=>{
+        if (p.get(k)) out[k]=p.get(k);
+      });
+      return out;
+    }
+
+    function updateTotals(){
+      const totalCents = currentTotalCents();
+      const unitPriceEl = $('#unitPrice');
+      const totalEl = $('#totalValue');
+      if (unitPriceEl) unitPriceEl.textContent = formatCents(totalCents);
+      if (totalEl) totalEl.textContent = 'R$ ' + formatCents(totalCents);
+    }
+
+    function firePagePixelsOnce(){
+      if (getConsent() !== 'marketing') return;
+      const qty = currentQty();
+      const value = currentTotalCents()/100;
+
+      if (window.fbq){
+        fbq('track','ViewContent',{content_ids:['resumo_pedido_black'],content_type:'product_group',value, currency:'BRL'});
+        fbq('track','InitiateCheckout',{content_ids:['resumo_pedido_black'],content_type:'product_group',value, currency:'BRL'});
+      }
+      if (window.gtag){
+        gtag('event','view_item',{currency:'BRL', value, items:[{item_id:'resumo_pedido_black', quantity:qty}]});
+        gtag('event','begin_checkout',{currency:'BRL', value, items:[{item_id:'resumo_pedido_black', quantity:qty}]});
+      }
+    }
+    function fireValueUpdated(){
+      if (getConsent() !== 'marketing') return;
+      const qty = currentQty();
+      const value = currentTotalCents()/100;
+      if (window.fbq){
+        fbq('trackCustom','CheckoutValueUpdated',{content_ids:['resumo_pedido_black'],content_type:'product_group',quantity:qty, value, currency:'BRL'});
+      }
+      if (window.gtag){
+        gtag('event','checkout_value_updated',{currency:'BRL', value, items:[{item_id:'resumo_pedido_black', quantity:qty}]});
+      }
+    }
+
+    function buildCheckoutUrlFallback(){
+      const qty = currentQty();
+      const totalCents = currentTotalCents();
+      const params = new URLSearchParams({
+        q: String(qty),
+        amount_cents: String(totalCents),
+        amount_br: formatCents(totalCents)
+      });
+      const utm = getQueryParams();
+      Object.entries(utm).forEach(([k,v])=>params.set(k,v));
+      return `${CHECKOUT_BASE_URL}/?${params.toString()}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      const qtySel = $('#qty');
+      if (qtySel){ qtySel.value = '1'; }
+      updateTotals();
+      firePagePixelsOnce();
+
+      if (qtySel){
+        const onQtyChange = ()=>{
+          qtySel.value = String(clampQty(qtySel.value));
+          updateTotals();
+          fireValueUpdated();
+        };
+        qtySel.addEventListener('change', onQtyChange);
+        qtySel.addEventListener('input', onQtyChange);
+      }
+
+      const checkoutA = $('#checkoutLink');
+      if (checkoutA){
+        checkoutA.addEventListener('click', (ev)=>{
+          ev.preventDefault();
+          if (getConsent()==='marketing' && window.fbq){
+            const qty = currentQty();
+            const value = currentTotalCents()/100;
+            fbq('track','InitiateCheckout',{num_items: qty, value, currency:'BRL', content_ids:['TV_BLACK_FRIDAY'], content_type:'product'});
+          }
+          const url = buildCheckoutUrlFallback();
+          window.location.href = url; // mesma aba
+        });
+      }
+
+      const w = document.getElementById('whats-float');
+      if (w){
+        w.addEventListener('click', ()=>{
+          if (getConsent()==='marketing'){
+            if (window.fbq) fbq('track','Contact',{method:'WhatsApp'});
+            if (window.gtag) gtag('event','contact',{method:'whatsapp'});
+          }
+        });
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
